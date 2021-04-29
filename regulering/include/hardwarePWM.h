@@ -6,7 +6,7 @@
 #define PWMFrequency 1
 
 #define setPWM(DUTY) MCPWM0.channel[0].cmpr_value[0].val = ((4000/(100*PWMFrequency))*DUTY); /* Set the counter compare for DUTY% duty-cycle*/
-#define PWMsetupActiveLOW \
+#define PWMsetup \
   mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM0A, PWMpin);      /* Initialise channel MCPWM0A on GPIO pin 27 */\
   MCPWM0.clk_cfg.prescale = 199;                 /* Set the 160MHz clock prescaler to 199 (160MHz/(199+1)=800kHz), 8 bit value*/\
   MCPWM0.timer[0].period.prescale = 199;         /* Set timer 0 prescaler to 199 (800kHz/(199+1))=4kHz), 8 bit value*/\
