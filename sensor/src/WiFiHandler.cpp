@@ -24,7 +24,7 @@ int SendData(float TMP, float CO2){
   int sleepTime = 0;
 
   WiFiClient client; // Use WiFiClient class to create TCP connections
-  const int httpPort = 8080;
+  const int httpPort = 80;
   if (!client.connect(host, httpPort)) {
     Serial.println("connection failed");
     return 0;

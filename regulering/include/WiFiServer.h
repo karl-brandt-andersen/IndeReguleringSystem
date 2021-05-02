@@ -6,7 +6,7 @@
 #define password "password"             //LAN
 #define soft_ap_ssid "klimaServer"
 #define soft_ap_password "password"
-#define SensorSnoozeTime "20"
+#define SensorSnoozeTime "60"
 
 void HandleSensor();
 void WiFisetup();
