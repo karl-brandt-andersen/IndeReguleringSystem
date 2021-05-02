@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <hardwarePWM.h>
+#include <WiFiServer.h>
 
 #define fanSensePin 22
 
@@ -17,11 +18,12 @@ void setup() {
   setPWM(20);
   Serial.begin(115200);
   Serial.println("this is the regulering");
-
   pinMode(fanSensePin, INPUT_PULLUP);       //Set tacho pin to input with pullup to vcc
+  WiFisetup();
 }
 
 void loop() {
   printf("Speed: %.2f RPM\n", GetFanRPM());
   delay(500);
+  handleServer();
 }
