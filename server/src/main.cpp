@@ -135,11 +135,6 @@ void APIMaker(){
         
       } 
 
-      
-
-
-
-
 
       request->send(200);
     }
@@ -179,9 +174,6 @@ void serverSetup(){
   Serial.println(WiFi.localIP());
 
 }
-
-
-
 
 
 void sensorWifiSetup(){
