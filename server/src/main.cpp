@@ -13,14 +13,21 @@
 void serverSetup();
 void HttpListner();
 void APIMaker();
+void toDouble();
 
 
 
-const char* wifi_network_ssid = "A.S";
-const char* wifi_network_password = "1elefantmed8sko";
+// information for wifi connectivity, 
+// if time, this can be made into a webserver, so when the server starts, it can host a webpage, where it's possible to input wifi information
+const char* wifi_network_ssid = "AAU-1-DAY";
+const char* wifi_network_password = "flag81safe";
 
+
+// setup of AP server, this is what the sensors, and keypad connects too
 const char* soft_ap_ssid = "klimaServer";
 const char* soft_ap_password = "password";
+
+
 
 const char* thingsspeak = "https://api.thingspeak.com/update";
 String apiWriteKey = "8QN9SCFZ23U6THNR";
@@ -38,11 +45,14 @@ char datanum0[20];
 char datanum1[20];
 char datanum2[20];
 
-int sep1;
+int sep1 = 0;
 int sep2;
 
 int tint;
 
+char temparr[10];
+char co2arr[10];
+double temp, co2;
 
 // Create A server
 AsyncWebServer server(80);
@@ -82,14 +92,81 @@ void APIMaker(){
     NULL,
     [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
       
+      // it 
+
+      test = (char*)data;
+      Serial.println(test);
+
+      int ii;
+      Serial.println(len);
+      for(int i = 0; i < len; i++){
+        Serial.println(i);
+        
+        //Serial.println(ii);
+        CurrentChar = data[i];
+        
+        if(dataSpreader == 1){
+          temparr[ii] = data[i];
+          sep1 = sep1+2;
+         // Serial.write(data[i]);
+         // Serial.println();
+         // Serial.write(temparr[ii]);
+         // Serial.println();
+        }
+        if(dataSpreader == 2){
+          co2arr[ii] = data[i];
+          sep1 = sep1+2;
+        }
+        if(CurrentChar == "44"){
+          dataSpreader++;
+          sep1 = i;
+
+          Serial.println(dataSpreader);
+        }
+
+        ii = sep1 - i;
+      }
+
+      temparr[9] = '\0';
+      co2arr[9] = '\0';
+
+
+      temp = atof(temparr);
+      co2 = atof(co2arr);
+
+
+      Serial.println(temp);
+      Serial.println(co2);
+
+      Serial.println((char*)temparr);
+      Serial.println((char*)co2arr);
+
+
+      Serial.println(temparr);
+      dataSpreader = 0;
+      
+       /* huge comment 
+
       // making the char array into a string that can written into an csv file at ez.
       test = (char*)data;
       Serial.println(test);
-      Serial.println((char*)data);
+      //Serial.println((char*)data);
+
+
+
+
+
+
+
+
+
+
 
       //tint = atoi(*data)
       
+      */
 
+      /* this is outdated. ill try to make it send more ivformation instead. if i can
 
 
       // this for loop should essential be moved into it's own func.
@@ -102,16 +179,16 @@ void APIMaker(){
         //Serial.println(total);
 
         CurrentChar = data[i];
-        Serial.println("CC: " + CurrentChar);
-        Serial.println("len:" + len);
-        Serial.println("i:" + i);
-        Serial.println("data:" + dataSpreader);
+        //Serial.println("CC: " + CurrentChar); // print char value in ascii
+        //Serial.println("len:" + len);
+        //Serial.println("i:" + i);
+        //Serial.println("data:" + dataSpreader);
 
-        if (CurrentChar == ";")
+        if (CurrentChar == "44")
         {
           dataSpreader++;
         }
-        
+        // the mothode to conver .csv to doubles, what if i just convert multiple doubles to a csv string.
         switch (dataSpreader)
         {
         case 0: // the first thing that will be sent is the device ip
@@ -135,10 +212,33 @@ void APIMaker(){
         
       } 
 
+      Serial.println(sep1);
+      Serial.println(sep2);
+
+      unsigned long long int m = 1;
+      double ret = 0;
+      for (int j = sep2-1; j >= sep1; j--) {
+        ret += (data[j] - '0') * m;
+        m *= 10;
+        Serial.println(ret);
+
+
+    }
+
+
+
+      */
+
+
+
+
+      //Serial.println("ret:");
+      //Serial.println(ret);
+      //Serial.println(co2);
 
       request->send(200);
     }
-
+    
   
   );
 
@@ -220,3 +320,15 @@ void dataToVar(){
 
   
 }
+ // this is a mthode to convert char array to double, but it keeps getting overflow
+double toDouble(const char* s, int start, int stop) {
+    unsigned long long int m = 1;
+    float ret = 0;
+    for (int i = stop; i >= start; i--) {
+        ret += (s[i] - '0') * m;
+        m *= 10;
+    }
+    return ret;
+}
+
+
