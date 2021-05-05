@@ -14,13 +14,17 @@ void serverSetup();
 void HttpListner();
 void APIMaker();
 void toDouble();
+void dataPharser();
 
-
+// it's possible to make a id and pass for the post and get commands, might be a future edition.
 
 // information for wifi connectivity, 
 // if time, this can be made into a webserver, so when the server starts, it can host a webpage, where it's possible to input wifi information
-const char* wifi_network_ssid = "AAU-1-DAY";
-const char* wifi_network_password = "flag81safe";
+const char* wifi_network_ssid = "A.S";
+const char* wifi_network_password = "1elefantmed8sko";
+
+//const char* wifi_network_ssid = "AAU-1-DAY";
+//const char* wifi_network_password = "flag81safe";
 
 
 // setup of AP server, this is what the sensors, and keypad connects too
@@ -32,40 +36,29 @@ const char* soft_ap_password = "password";
 const char* thingsspeak = "https://api.thingspeak.com/update";
 String apiWriteKey = "8QN9SCFZ23U6THNR";
 
-unsigned long lastTime = 0;
-
-unsigned long timerDelay = 10000;
 
 int dataSpreader = 0;
 
 String test;
 String CurrentChar;
 
-char datanum0[20];
-char datanum1[20];
-char datanum2[20];
-
 int sep1 = 0;
-int sep2;
-
-int tint;
 
 char temparr[10];
 char co2arr[10];
 double temp, co2;
 
+double setTemp;
+char setTemparr[10];
+
+int ii;
+
 // Create A server
 AsyncWebServer server(80);
 
 void setup() {
-  // put your setup code here, to run once:
   Serial.begin(115200);
-
-
-
   serverSetup();
-
-
   APIMaker();
 }
 
@@ -73,7 +66,7 @@ void setup() {
 
 
 void loop() {
-  // HttpListner();
+
 }
 
 
@@ -84,6 +77,9 @@ void APIMaker(){
     request->send(200, "plain/text", "hello from server");
   });
 
+  // What happens when the server gets an HTTP POST with the /sensData 
+  // the data needs to be in thsi format "7,IP,temp,co2" for the sensors or "8,IP,settemp"
+  // for the panel. the 7 and 8 is for the server to understand what is what. 
   server.on(
     "/sensData",
     HTTP_POST,
@@ -92,150 +88,78 @@ void APIMaker(){
     NULL,
     [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
       
-      // it 
+      CurrentChar = data[0];
 
       test = (char*)data;
       Serial.println(test);
 
-      int ii;
-      Serial.println(len);
-      for(int i = 0; i < len; i++){
-        Serial.println(i);
-        
-        //Serial.println(ii);
-        CurrentChar = data[i];
-        
-        if(dataSpreader == 1){
-          temparr[ii] = data[i];
-          sep1 = sep1+2;
-         // Serial.write(data[i]);
-         // Serial.println();
-         // Serial.write(temparr[ii]);
-         // Serial.println();
-        }
-        if(dataSpreader == 2){
-          co2arr[ii] = data[i];
-          sep1 = sep1+2;
-        }
-        if(CurrentChar == "44"){
-          dataSpreader++;
-          sep1 = i;
-
-          Serial.println(dataSpreader);
-        }
-
-        ii = sep1 - i;
-      }
-
-      temparr[9] = '\0';
-      co2arr[9] = '\0';
-
-
-      temp = atof(temparr);
-      co2 = atof(co2arr);
-
-
-      Serial.println(temp);
-      Serial.println(co2);
-
-      Serial.println((char*)temparr);
-      Serial.println((char*)co2arr);
-
-
-      Serial.println(temparr);
-      dataSpreader = 0;
-      
-       /* huge comment 
-
-      // making the char array into a string that can written into an csv file at ez.
-      test = (char*)data;
-      Serial.println(test);
-      //Serial.println((char*)data);
-
-
-
-
-
-
-
-
-
-
-
-      //tint = atoi(*data)
-      
-      */
-
-      /* this is outdated. ill try to make it send more ivformation instead. if i can
-
-
-      // this for loop should essential be moved into it's own func.
-      // since the data in the body will be written in a csv format when sent, it will need to be broken down into the diffrent data parts
-      for (size_t i = 0; i < len; i++) {
-        Serial.write(data[i]);
-        Serial.println();
-
-        //Serial.println(index);
-        //Serial.println(total);
-
-        CurrentChar = data[i];
-        //Serial.println("CC: " + CurrentChar); // print char value in ascii
-        //Serial.println("len:" + len);
-        //Serial.println("i:" + i);
-        //Serial.println("data:" + dataSpreader);
-
-        if (CurrentChar == "44")
-        {
-          dataSpreader++;
-        }
-        // the mothode to conver .csv to doubles, what if i just convert multiple doubles to a csv string.
-        switch (dataSpreader)
-        {
-        case 0: // the first thing that will be sent is the device ip
+      // Splitting the code into usefull doubles that contain temp and co2
+      if(CurrentChar == "55"){ //-------------------------no default statement--------
+        Serial.println(len);
+        for(int i = 0; i < len; i++){
+          //Serial.println(i);
           
-          break;
-        case 1: // second will be temp
-          sep1 = i;
-          break;
-        case 2: // third will be co2
-          sep2 = i;
-          break;
+          CurrentChar = data[i];
+          
+          if(dataSpreader == 2){
+            temparr[ii] = data[i];
+            sep1 = sep1+2;
+          }
 
-        default:
-          break;
-        }
+          if(dataSpreader == 3){
+            co2arr[ii] = data[i];
+            sep1 = sep1+2;
+          }
 
-        if (i == len - 1)
-        {
-          dataSpreader = 0;
+          if(CurrentChar == "44"){
+            dataSpreader++;
+            sep1 = i;
+
+            //Serial.println(dataSpreader);
+          }
+
+          ii = sep1 - i;
         }
         
-      } 
+        // this could have been made more nice, but that takes time. So fuck that and let me die
+      } else if(CurrentChar == "56") {
+        Serial.println("working");
 
-      Serial.println(sep1);
-      Serial.println(sep2);
+        for(int i = 0; i < len; i++){
+          CurrentChar = data[i];
+          if(dataSpreader == 2){
+            setTemparr[ii] = data[i];
+            sep1 = sep1+2;
+          }
+          if(CurrentChar == "44"){
+            dataSpreader++;
+            sep1 = i;
+          }
 
-      unsigned long long int m = 1;
-      double ret = 0;
-      for (int j = sep2-1; j >= sep1; j--) {
-        ret += (data[j] - '0') * m;
-        m *= 10;
-        Serial.println(ret);
+          ii = sep1 - i;
+        }
+
+      }
+      // making sure that the is an end to the char arrays, else there will come an overflow
+        temparr[9] = '\0';
+        co2arr[9] = '\0';
+        setTemparr[9] = '\0';
+
+        temp = atof(temparr);
+        co2 = atof(co2arr);
+        setTemp = atof(setTemparr);
+
+        Serial.println(temp);
+        Serial.println(co2);
+        Serial.println(setTemp);
+        //Serial.println((char*)temparr);
+        //Serial.println((char*)co2arr);
 
 
-    }
-
-
-
-      */
-
-
-
-
-      //Serial.println("ret:");
-      //Serial.println(ret);
-      //Serial.println(co2);
-
+        //Serial.println(temparr);
+        dataSpreader = 0;
+      // returning a sentence (200 means ok) here shall there be an input command in microsecond of how long a sensor needs to sleep
+      // the command shall be adjustable, so that it's possible to choose how often the sensors need update.
       request->send(200);
     }
     
@@ -249,9 +173,7 @@ void APIMaker(){
 
  
 
-void jsonDecoder(){
 
-}
 
 
 void serverSetup(){
@@ -266,7 +188,7 @@ void serverSetup(){
     delay(500);
     Serial.println("Connecting to WiFI");
   }
-
+  // printing the IP's for the server, so it's easy to find it in testing.
   Serial.print("ESP soft AP ip is : ");
   Serial.println(WiFi.softAPIP());
 
@@ -276,6 +198,9 @@ void serverSetup(){
 }
 
 
+
+
+// this code is for a sensor to connect to the server, also used by control pannel
 void sensorWifiSetup(){
   WiFi.begin(soft_ap_ssid, soft_ap_password);
   while (WiFi.status() != WL_CONNECTED)
@@ -295,7 +220,8 @@ void sendSensorData(){
 }
 
 
-
+// don't know yet, might be usefull later, if we need to connect to thingsspeak api for a quick finnish.
+/*
 void api(){
   
   
@@ -308,27 +234,12 @@ void api(){
       http.addHeader("Content-Type", "");
     }
     {
-      /* code */
+    
     }
     
   }
 
 
 }
-
-void dataToVar(){
-
-  
-}
- // this is a mthode to convert char array to double, but it keeps getting overflow
-double toDouble(const char* s, int start, int stop) {
-    unsigned long long int m = 1;
-    float ret = 0;
-    for (int i = stop; i >= start; i--) {
-        ret += (s[i] - '0') * m;
-        m *= 10;
-    }
-    return ret;
-}
-
+*/
 
