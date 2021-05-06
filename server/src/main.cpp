@@ -20,11 +20,11 @@ void dataPharser();
 
 // information for wifi connectivity, 
 // if time, this can be made into a webserver, so when the server starts, it can host a webpage, where it's possible to input wifi information
-const char* wifi_network_ssid = "A.S";
-const char* wifi_network_password = "1elefantmed8sko";
+//const char* wifi_network_ssid = "A.S";
+//const char* wifi_network_password = "1elefantmed8sko";
 
-//const char* wifi_network_ssid = "AAU-1-DAY";
-//const char* wifi_network_password = "flag81safe";
+const char* wifi_network_ssid = "AAU-1-DAY";
+const char* wifi_network_password = "seed34chin";
 
 
 // setup of AP server, this is what the sensors, and keypad connects too
@@ -47,9 +47,11 @@ int sep1 = 0;
 char temparr[10];
 char co2arr[10];
 double temp, co2;
-
-double setTemp;
+                        // change the length of the arrays if you want to have longe amounts of data, (This is already more than enough)
+double setTemp, setco2;
 char setTemparr[10];
+char setCo2arr[10];
+
 
 int ii;
 
@@ -78,7 +80,7 @@ void APIMaker(){
   });
 
   // What happens when the server gets an HTTP POST with the /sensData 
-  // the data needs to be in thsi format "7,IP,temp,co2" for the sensors or "8,IP,settemp"
+  // the data needs to be in thsi format "7,IP,temp,co2" for the sensors or "8,IP,settemp,setco2"
   // for the panel. the 7 and 8 is for the server to understand what is what. 
   server.on(
     "/sensData",
@@ -125,10 +127,14 @@ void APIMaker(){
       } else if(CurrentChar == "56") {
         Serial.println("working");
 
-        for(int i = 0; i < len; i++){
+        for(int i = 0; i < len; i++){ // could make if statement that sets the 0 and the end of the digits, istead of a fixed place in the arr
           CurrentChar = data[i];
           if(dataSpreader == 2){
             setTemparr[ii] = data[i];
+            sep1 = sep1+2;
+          }
+          if(dataSpreader == 3){
+            setCo2arr[ii] = data[i];
             sep1 = sep1+2;
           }
           if(CurrentChar == "44"){
@@ -144,10 +150,12 @@ void APIMaker(){
         temparr[9] = '\0';
         co2arr[9] = '\0';
         setTemparr[9] = '\0';
+        setCo2arr[9] = '\0';
 
         temp = atof(temparr);
         co2 = atof(co2arr);
         setTemp = atof(setTemparr);
+        setco2 =  atof(setCo2arr);
 
         Serial.println(temp);
         Serial.println(co2);
