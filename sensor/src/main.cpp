@@ -9,7 +9,8 @@
 #include <AsyncTCP.h>
 
 void sensorWifiSetup();
-int sendSensorData();
+int sendSensorData(double, double);
+String dataMaker(int, double, double);
 
 
 const char* soft_ap_ssid = "klimaServer";
@@ -19,10 +20,10 @@ const char* serverName = "http://192.168.4.1/sensData";
 
 String dataString;
 
-int type = 7;
+int id = 7;
 
-double temp = 23.432;
-double co2 = 670;
+double tempdata = 23.432;
+double co2data = 670;
 
 IPAddress ip;
 
@@ -44,7 +45,7 @@ void loop() {
   // put your main code here, to run repeatedly:
   //Serial.println("this is the sensor");
 
-  sendSensorData();
+  sendSensorData(tempdata, co2data);
   delay(1000);
 
 
@@ -66,11 +67,11 @@ void sensorWifiSetup(){
 
 }
 
-int sendSensorData(int temp, int co2){
+int sendSensorData(double t, double c){
   if(WiFi.status()== WL_CONNECTED){
       HTTPClient http;
        http.begin(serverName);
-       dataString = "7,32.3,5564,654"; // making a string from the temp and co2 inputs of the func
+       dataString = dataMaker(id, t, c); // making a string from the temp and co2 inputs of the func
        Serial.println(dataString);
        http.addHeader("Content-Type", "text/plain");
        int httpResponseCode = http.POST(dataString);
@@ -83,4 +84,12 @@ int sendSensorData(int temp, int co2){
     }
 
     
+}
+
+String dataMaker(int id, double t, double c){
+  String SS;
+  Serial.println(ip);
+  SS = String(ip); // apperently this doesn't work, i really don't know why.
+  
+  return SS;
 }
