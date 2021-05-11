@@ -4,6 +4,15 @@
 
 #define fanSensePin 22
 
+
+const int ledPin = 21;  // 16 corresponds to GPIO16
+
+// setting PWM properties
+const int freq = 5000;
+const int ledChannel = 0;
+const int resolution = 10;
+ 
+
 float GetFanRPM(){
   float puls = pulseIn(fanSensePin, HIGH);  //Mål pulsen på sense i uS
   /*Få uS til S, X*=1000000, 
@@ -15,7 +24,12 @@ float GetFanRPM(){
 
 void setup() {
   PWMsetup;
-  setPWM(20);
+  setPWM(75);
+    // configure LED PWM functionalitites
+  ledcSetup(ledChannel, freq, resolution);
+  // attach the channel to the GPIO to be controlled
+  ledcAttachPin(ledPin, ledChannel);
+  ledcWrite(ledChannel, 1024);
   Serial.begin(115200);
   Serial.println("this is the regulering");
   pinMode(fanSensePin, INPUT_PULLUP);       //Set tacho pin to input with pullup to vcc
@@ -24,6 +38,16 @@ void setup() {
 
 void loop() {
   printf("Speed: %.2f RPM\n", GetFanRPM());
+  printf("TMP: %0.2f, CO2: %d\n", GetTemp(), GetCO2());
   delay(500);
   handleServer();
+  /*
+  for (int i = 1020; i > 50; i=i-10){
+    ledcWrite(ledChannel, i);
+    delay(3000);
+    int rpm = GetFanRPM();
+    float CFM = 52/(rpm/200);
+    printf("%.2f; %d; %.2f\n", rpm,i, CFM);
+  }
+  */
 }

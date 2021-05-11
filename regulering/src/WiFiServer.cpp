@@ -3,13 +3,22 @@
 const char * headerKeys[] = {"TMP", "CO2"} ;
 const size_t numberOfHeaders = 2;
 WebServer server(80);
+float TMP = 0;
+int CO2 = 0;
+
+float GetTemp(){
+	return TMP;
+}
+int GetCO2(){
+	return CO2;	
+}
 
 void HandleSensor(){
-  float TMP = server.header("TMP").toFloat();
-  int CO2 = server.header("CO2").toInt();
+  TMP = server.header("TMP").toFloat();
+  CO2 = server.header("CO2").toInt();
   Serial.println(TMP);
   Serial.println(CO2);
-  if (CO2 && TMP)server.sendHeader("SLP", SensorSnoozeTime);
+  if (CO2 && TMP) server.sendHeader("SLP", SensorSnoozeTime);
   server.send(200, "text/plain", "");
 }
 
@@ -20,10 +29,10 @@ void WiFisetup(void) {
   WiFi.begin(ssid, password);
   
   // Wait for connection
-  while (WiFi.status() != WL_CONNECTED) {
+  //while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
-  }
+  //  Serial.print(".");
+  //}
 
   Serial.println("");
   Serial.print("Connected to ");

@@ -13,3 +13,5 @@ void WiFisetup();
 void handleRoot();
 void handleNotFound();
 void handleServer();
+float GetTemp();
+int GetCO2();
