@@ -6,8 +6,12 @@
         {
             "path": "regulering"
         }
-	{
-	    "path": "sensor"
-	}
+		{
+			"path": "sensor"
+		}
+		{
+			"path": "Kontrolpanel"
+		}
+
     ]
 }
