@@ -1,10 +1,12 @@
 #include "WiFiServer.h"
 
-const char * headerKeys[] = {"TMP", "CO2"} ;
+const char * headerKeys[] = {"TMP", "CO2", "STE", "SCO"};
 const size_t numberOfHeaders = 2;
 WebServer server(80);
 float TMP = 0;
+float setTMP = 0;
 int CO2 = 0;
+int setCO2 = 0;
 
 float GetTemp(){
 	return TMP;
@@ -19,6 +21,18 @@ void HandleSensor(){
   Serial.println(TMP);
   Serial.println(CO2);
   if (CO2 && TMP) server.sendHeader("SLP", SensorSnoozeTime);
+  server.send(200, "text/plain", "");
+}
+
+void HandleKontrol(){
+  float tempTMP = server.header("STE").toFloat();
+  int tempCO2 = server.header("SCO").toInt();
+  if (tempTMP) setTMP = tempTMP;
+  if (tempCO2) setCO2 = tempCO2;
+  Serial.println(tempTMP);
+  Serial.println(tempCO2);
+  server.sendHeader("TMP", String(TMP));
+  server.sendHeader("CO2", String(CO2));
   server.send(200, "text/plain", "");
 }
 
@@ -45,6 +59,7 @@ void WiFisetup(void) {
 
   server.on("/", handleRoot);
   server.on("/S", HandleSensor);
+  server.on("/K", HandleKontrol);
   server.on("/inline", []() {
     server.send(200, "text/plain", "this works as well");
   });

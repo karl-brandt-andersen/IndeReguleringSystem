@@ -9,6 +9,7 @@
 #define SensorSnoozeTime "60"
 
 void HandleSensor();
+void HandleKontrol();
 void WiFisetup();
 void handleRoot();
 void handleNotFound();
