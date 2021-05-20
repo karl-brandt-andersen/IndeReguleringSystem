@@ -1,6 +1,10 @@
 #include <Arduino.h>
 #include <hardwarePWM.h>
 #include <WiFiServer.h>
+#include <OneWire.h>
+
+// Setup a oneWire instance to communicate with any OneWire device
+OneWire  ds(19);  // on pin 2 (a 4.7K resistor is necessary)
 
 #define fanSensePin 22
 #define fanSetup pinMode(fanSensePin, INPUT_PULLUP);       //Set tacho pin to input with pullup to vcc
@@ -13,6 +17,8 @@ const int freq = 5000;
 const int ledChannel = 0;
 const int resolution = 10;
 
+
+
 /*  FLYT EFTER TEST*/
 int desiredValueCarbon;
 float IntergralSumValueVent = 0;
@@ -24,8 +30,7 @@ float PropValueVent = 1;
 float InteValueVent = 1;
 
 int minimumVent = 300; //juster
-int timeConstant = 0;
-int maximumResolution = (int)(pow(2,12)-1);
+int timeConstant = 60;
 
 float desiredValueTemp = 20;
 float outsideTemp = 10;
@@ -83,22 +88,13 @@ void motorOne(int speed){
 	  ledcWrite(ledChannel, 1024);
 }
 
-
 void motorTwo(int speed){
 	/* WIFI SEND, NOT IMPEMENTED */
 }
 
-void setUpPWM(int i, int z){
-	ledcSetup(0, 5000, 12);
-	ledcSetup(2,5000,12);
-	
-	ledcAttachPin(16, 0);
-	ledcAttachPin(17,2);
-}
-
 /*  /FLYT EFTER TEST */
 
- 
+int HeaterTemp();
 
 float GetFanRPM(){
   float puls = pulseIn(fanSensePin, HIGH);  //Mål pulsen på sense i uS
@@ -111,42 +107,81 @@ float GetFanRPM(){
 }
 
 void setup() {
-  PWMsetup;
-  setPWM(75);
-    // configure LED PWM functionalitites
-  ledcSetup(ledChannel, freq, resolution);
-  // attach the channel to the GPIO to be controlled
-  ledcAttachPin(fanPin, ledChannel);
-  ledcWrite(ledChannel, 0*1024);
   Serial.begin(115200);
-  Serial.println("this is the regulering");
+  Serial.println("A");
+  PWMsetup;   //Heater
+  setPWM(75); //Heater 75%
+  ledcSetup(ledChannel, freq, resolution); // configure LED PWM functionalitites
+  ledcAttachPin(fanPin, ledChannel);  // attach the channel to the GPIO to be controlled
+  ledcWrite(ledChannel, 1020);
   fanSetup;       //Set tacho pin to input with pullup to vcc
   WiFisetup();
 }
 
 void loop() {
-  //printf("Speed: %.2f RPM\n", GetFanRPM());
-  //printf("TMP: %0.2f, CO2: %d\n", GetTemp(), GetCO2());
-  delay(500);
-  handleServer();
-  /*
-  for (int i = 1020; i > 50; i=i-10){
-    ledcWrite(ledChannel, i);
-    delay(3000);
-    int rpm = GetFanRPM();
-    float CFM = 52/(rpm/200);
-    printf("%.2f; %d; %.2f\n", rpm,i, CFM);
-  }
-  */
-  float heat = PIDCalculationHeat(5.0);
-  printf("heat : %0.2f\n", heat);
-  delay(500);
-  heat = PIDCalculationHeat(13);
-  printf("heat : %0.2f\n", heat);
-  delay(500);
-  heat = PIDCalculationHeat(20);
-  printf("heat : %0.2f\n", heat);
-  setPWM(heat > 100? 100: heat)
+  while (HeaterTemp());
+  printf("Speed: %.2f RPM\n", GetFanRPM());
+  printf("TMP: %0.2f, CO2: %d\n", GetTemp(), GetCO2());
+  desiredValueTemp = GetSetTemp();
+  printf("setTMP: %0.2f, setCO2: %d\n", desiredValueTemp, GetSetCO2());
+ 
+  float heat = PIDCalculationHeat(Htemp);
+  printf("heat : %0.2f. Htemp: %0.2f\n\n", heat, Htemp);
+  if (heat < 0) heat = 0;
+  if (heat > 100) heat = 100;
+  setPWM(heat)
   //PIRegulationVent(PICalculationVent(GetCO2()));
+   delay(500);
+  handleServer();
   
+}
+
+int HeaterTemp(){
+  byte i;
+  byte data[12];
+  byte addr[8];
+  float celsius;
+  
+  while ( !ds.search(addr)) {
+    ds.reset_search();
+    delay(250);
+	return 1;
+  }
+  
+  if (OneWire::crc8(addr, 7) != addr[7]) {
+      Serial.println("CRC is not valid!");
+      return 1;
+  }
+
+  ds.reset();
+  ds.select(addr);
+  ds.write(0x44, 1);        // start conversion, with parasite power on at the end
+  
+  delay(1000);     // maybe 750ms is enough, maybe not
+  // we might do a ds.depower() here, but the reset will take care of it.
+  
+  ds.reset();
+  ds.select(addr);    
+  ds.write(0xBE);         // Read Scratchpad
+
+  for ( i = 0; i < 9; i++) {           // we need 9 bytes
+    data[i] = ds.read();
+  }
+
+  // Convert the data to actual temperature
+  // because the result is a 16 bit signed integer, it should
+  // be stored to an "int16_t" type, which is always 16 bits
+  // even when compiled on a 32 bit processor.
+  int16_t raw = (data[1] << 8) | data[0];
+  
+	byte cfg = (data[4] & 0x60);
+	// at lower res, the low bits are undefined, so let's zero them
+	if (cfg == 0x00) raw = raw & ~7;  // 9 bit resolution, 93.75 ms
+	else if (cfg == 0x20) raw = raw & ~3; // 10 bit res, 187.5 ms
+	else if (cfg == 0x40) raw = raw & ~1; // 11 bit res, 375 ms
+	//// default is 12 bit resolution, 750 ms conversion time
+  
+  celsius = (float)raw / 16.0;
+  Htemp = celsius;
+  return 0;
 }

@@ -1,7 +1,7 @@
 #include "WiFiServer.h"
 
 const char * headerKeys[] = {"TMP", "CO2", "STE", "SCO"};
-const size_t numberOfHeaders = 2;
+const size_t numberOfHeaders = 4;
 WebServer server(80);
 float TMP = 0;
 float setTMP = 0;
@@ -13,6 +13,12 @@ float GetTemp(){
 }
 int GetCO2(){
 	return CO2;	
+}
+float GetSetTemp(){
+	return setTMP;
+}
+int GetSetCO2(){
+	return setCO2;	
 }
 
 void HandleSensor(){
@@ -38,9 +44,9 @@ void HandleKontrol(){
 
 void WiFisetup(void) {
 
-  WiFi.mode(WIFI_MODE_APSTA);
-  WiFi.softAP(soft_ap_ssid, soft_ap_password,5,1,4); //Hidden network on CH5, maximum 4 clients.
-  WiFi.begin(ssid, password);
+  WiFi.mode(WIFI_MODE_AP); //WiFi.mode(WIFI_MODE_APSTA);
+  WiFi.softAP(soft_ap_ssid, soft_ap_password,5,0,4); //Hidden network on CH5, maximum 4 clients.
+  //WiFi.begin(ssid, password);
   
   // Wait for connection
   //while (WiFi.status() != WL_CONNECTED) {

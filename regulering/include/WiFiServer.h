@@ -16,3 +16,5 @@ void handleNotFound();
 void handleServer();
 float GetTemp();
 int GetCO2();
+float GetSetTemp();
+int GetSetCO2();
