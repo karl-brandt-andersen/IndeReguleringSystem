@@ -32,14 +32,14 @@ float InteValueVent = 1;
 int minimumVent = 300; //juster
 int timeConstant = 60;
 
-float desiredValueTemp = 20;
-float outsideTemp = 10;
+float desiredValueTemp = 22;
+float outsideTemp = 13;
 float IntergralSumValueHeat = 0;
 float lastError = 0;
 
-float PropValueTemp = 1;
-float InteValueTemp = 1;
-float DiffValueTemps = 1;
+float PropValueTemp = 50;
+float InteValueTemp = 2;
+float DiffValueTemps = 2;
 
 void motorOne(int speed);
 void motorTwo(int speed);
@@ -52,14 +52,17 @@ float PIDCalculationHeat(float readValue){
 	float error = desiredValueTemp - readValue;
   //printf("error: %0.2f\n", error);
   long time = millis() - lastHeat;
-	IntergralSumValueHeat += error*time;
-  
+
+  long workingTime = time/1000;
+
+	IntergralSumValueHeat += error*workingTime;
+
   //printf("IntergralSumValueHeat: %0.2f\n", IntergralSumValueHeat);
-	float correctionValue = PropValueTemp*error+IntergralSumValueHeat*InteValueTemp+ (error-lastError)/time*DiffValueTemps;
+	float correctionValue = PropValueTemp*error+IntergralSumValueHeat*InteValueTemp+ (error-lastError)/workingTime*DiffValueTemps;
 	//printf("correctionValue: %0.2f\n", correctionValue);
   lastError = error;
   lastHeat += time;
-	return correctionValue/1000;
+	return correctionValue;
 }
 
 
@@ -70,6 +73,29 @@ float PICalculationVent(int readValue){
 	IntergralSumValueVent += (float)(error-lastvalue)*timeConstant;
 	correctionValue = IntergralSumValueVent*(PropValueVent/InteValueVent)+PropValueVent*error;
 	return correctionValue;
+}
+
+int RegulationVent(int level){
+  int amount =  4;
+  int CO = level;
+  float Volume = 36.98;
+
+  float massCarbonDes = 68.83119814*CO;
+
+  float prod = 0.00001207479;
+  float co2MassPart = 0.000626;
+  float dense = 1.225;
+
+  float flow = -(amount*prod*Volume*dense)/((Volume*dense*co2MassPart-massCarbonDes)*dense);
+
+  float flowProportionality, flowOffset;
+
+  int adc = flow*flowProportionality + flowOffset;
+
+  return adc;
+
+
+
 }
 
 void PIRegulationVent(float correctionValue){
@@ -113,7 +139,7 @@ void setup() {
   setPWM(75); //Heater 75%
   ledcSetup(ledChannel, freq, resolution); // configure LED PWM functionalitites
   ledcAttachPin(fanPin, ledChannel);  // attach the channel to the GPIO to be controlled
-  ledcWrite(ledChannel, 1020);
+  ledcWrite(ledChannel, 300);
   fanSetup;       //Set tacho pin to input with pullup to vcc
   WiFisetup();
 }
@@ -126,12 +152,21 @@ void loop() {
   printf("setTMP: %0.2f, setCO2: %d\n", desiredValueTemp, GetSetCO2());
  
   float heat = PIDCalculationHeat(Htemp);
-  printf("heat : %0.2f. Htemp: %0.2f\n\n", heat, Htemp);
+  printf("heat : %0.2f. Htemp: %0.2f\n", heat, Htemp);
   if (heat < 0) heat = 0;
   if (heat > 100) heat = 100;
-  setPWM(heat)
+  printf("%0.2f", heat);
+  setPWM(heat);
   //PIRegulationVent(PICalculationVent(GetCO2()));
    delay(500);
+
+  if (Serial.available()){
+    printf("Restart\n");
+    Serial.read();
+    IntergralSumValueHeat = 0;
+  }
+
+
   handleServer();
   
 }
@@ -183,5 +218,6 @@ int HeaterTemp(){
   
   celsius = (float)raw / 16.0;
   Htemp = celsius;
+
   return 0;
 }

@@ -3,8 +3,8 @@
 const char * headerKeys[] = {"TMP", "CO2", "STE", "SCO"};
 const size_t numberOfHeaders = 4;
 WebServer server(80);
-float TMP = 0;
-float setTMP = 0;
+float TMP = 22;
+float setTMP = 24.6;
 int CO2 = 0;
 int setCO2 = 0;
 
@@ -35,6 +35,7 @@ void HandleKontrol(){
   int tempCO2 = server.header("SCO").toInt();
   if (tempTMP) setTMP = tempTMP;
   if (tempCO2) setCO2 = tempCO2;
+  Serial.print("Kontrol");
   Serial.println(tempTMP);
   Serial.println(tempCO2);
   server.sendHeader("TMP", String(TMP));
