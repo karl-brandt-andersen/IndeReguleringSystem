@@ -3,11 +3,11 @@
 #include <OneWire.h>
 
 // Setup a oneWire instance to communicate with any OneWire device
-OneWire  ds(23);  // on pin 2 (a 4.7K resistor is necessary)
+OneWire  ds(23);  // on pin 23 (a 4.7K resistor is necessary)
 
-const uint8_t mesure[9] = {0xff, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79};
-int CO2 = 0;
-float TMP = 0;
+const uint8_t mesure[9] = {0xff, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79};	//Read sequence for MH-Z19B
+int CO2 = 0;		//CO2 data
+float TMP = 0;		//Temprature data.
 
 void GetCO2();
 char getCheckSum(char *packet);
@@ -15,8 +15,8 @@ void Sleep(int Time);
 int getTemp();
 
 void setup() {
-  Serial.begin(115200);
-  Serial2.begin(9600);
+  Serial.begin(115200);	//Debug serial port.
+  Serial2.begin(9600);	//MH-Z19B (CO2 sensor) serial port.
 
   // We start by connecting to a WiFi network
   WifiSetup();
@@ -24,35 +24,35 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  while (getTemp());
-  GetCO2();
-  Serial.printf("TMP: %2.2f, CO2: %d\n", TMP, CO2);
-  Sleep(SendData(TMP, CO2));
-  delay(10000);
+  while (getTemp());	//Update TMP with temprature, will loop until succsesfull reading.
+  GetCO2();				//Update CO2 with CO2 concentration.
+  Serial.printf("TMP: %2.2f, CO2: %d\n", TMP, CO2);	//Debug
+  Sleep(SendData(TMP, CO2));	//Deepsleep for the amount given by the server
+  delay(10000);			//Wait before retrying.
 }
 
-void Sleep(int Time) {
-  if (Time) {
-    Serial.println("Sleeping");
-    esp_sleep_enable_timer_wakeup(Time * 1000000);
-    esp_deep_sleep_start();
+void Sleep(int Time) {			//Deepsleep
+  if (Time) {	//if the time is 0 we dont want to sleep.
+    Serial.println("Sleeping");	
+    esp_sleep_enable_timer_wakeup(Time * 1000000);	//Sleep time in seconds. (normally in uS)
+    esp_deep_sleep_start();						
   }
 }
 
-void GetCO2() {
-  Serial2.write(mesure, 9);
+void GetCO2() {								
+  Serial2.write(mesure, 9);					//Request CO2 reading
   delay(300);
-  if (Serial2.available()) {
-    char i = 0, inByte[9];
+  if (Serial2.available()) {				//If we got an answer. we want to read it.
+    byte i = 0;
+	char inByte[9];					
     while (Serial2.available()) 
-      inByte[i++] = Serial2.read();
-    if (inByte[8] == getCheckSum(inByte)) 
-      CO2 = inByte[2] * 256 + inByte[3];
+      inByte[i++] = Serial2.read();			//Read buffer to inByte
+    if (inByte[8] == getCheckSum(inByte)) 	//Check if checsum match.
+      CO2 = inByte[2] * 256 + inByte[3];	//Update CO2 with new data.
   }
 }
 
-char getCheckSum(char *packet) {
+char getCheckSum(char *packet) {	//Calculates checksum
   char i, checksum = 0;
   for ( i = 1; i < 8; i++) {
     checksum += packet[i];
@@ -69,36 +69,31 @@ int getTemp(){
   float celsius;
   
   while ( !ds.search(addr)) {
-    ds.reset_search();
+    ds.reset_search();    //Search for DS18b20
     delay(250);
 	return 1;
   }
   
   if (OneWire::crc8(addr, 7) != addr[7]) {
       Serial.println("CRC is not valid!");
-      return 1;
+      return 1;           //If CRC is invalid abort.
   }
 
   ds.reset();
   ds.select(addr);
   ds.write(0x44, 1);        // start conversion, with parasite power on at the end
   
-  delay(1000);     // maybe 750ms is enough, maybe not
-  // we might do a ds.depower() here, but the reset will take care of it.
+  delay(1000);              // Wait for conversion
   
   ds.reset();
   ds.select(addr);    
-  ds.write(0xBE);         // Read Scratchpad
+  ds.write(0xBE);         	// Read Scratchpad and data.
 
-  for ( i = 0; i < 9; i++) {           // we need 9 bytes
-    data[i] = ds.read();
+  for ( i = 0; i < 9; i++) {
+    data[i] = ds.read();    //Copy 9 bytes of data to the buffer data.
   }
 
-  // Convert the data to actual temperature
-  // because the result is a 16 bit signed integer, it should
-  // be stored to an "int16_t" type, which is always 16 bits
-  // even when compiled on a 32 bit processor.
-  int16_t raw = (data[1] << 8) | data[0];
+  int16_t raw = (data[1] << 8) | data[0];	//make 2 temprature bytes into 1 16 bit byte.
   
 	byte cfg = (data[4] & 0x60);
 	// at lower res, the low bits are undefined, so let's zero them
@@ -107,14 +102,7 @@ int getTemp(){
 	else if (cfg == 0x40) raw = raw & ~1; // 11 bit res, 375 ms
 	//// default is 12 bit resolution, 750 ms conversion time
   
-  celsius = (float)raw / 16.0;
+  celsius = (float)raw / 16.0;    //Calculate celsius.
   TMP = celsius;
   return 0;
 }
-/*
-ROM = 28 58 3A FD C 0 0 FF
-  Chip = DS18B20
-  Data = 1 80 1 4B 46 1F FF 10 10 56  CRC=56
-  Temperature = 24.00 Celsius, 75.20 Fahrenheit
-No more addresses.
-*/

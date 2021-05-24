@@ -22,80 +22,61 @@ int GetSetCO2(){
 }
 
 void HandleSensor(){
-  TMP = server.header("TMP").toFloat();
-  CO2 = server.header("CO2").toInt();
+  TMP = server.header("TMP").toFloat();		//read TMP header field
+  CO2 = server.header("CO2").toInt();		//read CO2 header field
   Serial.println(TMP);
   Serial.println(CO2);
-  if (CO2 && TMP) server.sendHeader("SLP", SensorSnoozeTime);
-  server.send(200, "text/plain", "");
+  if (CO2 && TMP) server.sendHeader("SLP", SensorSnoozeTime);	//If we got data, send sleeping interval back.
+  server.send(200, "text/plain", "");		//Send header without any html data.
 }
 
 void HandleKontrol(){
-  float tempTMP = server.header("STE").toFloat();
-  int tempCO2 = server.header("SCO").toInt();
-  if (tempTMP) setTMP = tempTMP;
-  if (tempCO2) setCO2 = tempCO2;
-  Serial.print("Kontrol");
+  float tempTMP = server.header("STE").toFloat();	//read STE (set temperature) header field
+  int tempCO2 = server.header("SCO").toInt();		//read SCO (set CO2) header field
+  if (tempTMP) setTMP = tempTMP;					//If its valid, save it.
+  if (tempCO2) setCO2 = tempCO2;					//If its valid, save it.
   Serial.println(tempTMP);
   Serial.println(tempCO2);
-  server.sendHeader("TMP", String(TMP));
-  server.sendHeader("CO2", String(CO2));
-  server.send(200, "text/plain", "");
+  server.sendHeader("TMP", String(TMP));			//Send current temperaure in return
+  server.sendHeader("CO2", String(CO2));			//Send current Co2 in return
+  server.send(200, "text/plain", "");				//Send header without any html data.
 }
 
 void WiFisetup(void) {
 
-  WiFi.mode(WIFI_MODE_AP); //WiFi.mode(WIFI_MODE_APSTA);
-  WiFi.softAP(soft_ap_ssid, soft_ap_password,5,0,4); //Hidden network on CH5, maximum 4 clients.
-  //WiFi.begin(ssid, password);
-  
-  // Wait for connection
-  //while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-  //  Serial.print(".");
-  //}
+  WiFi.mode(WIFI_MODE_AP);
+  WiFi.softAP(soft_ap_ssid, soft_ap_password,5,1,4); //Hidden network on CH5, maximum 4 clients.
+  //WiFi.begin(ssid, password); 	//Dont connect, not used
 
-  Serial.println("");
-  Serial.print("Connected to ");
-  Serial.println(ssid);
-  Serial.print("ESP soft AP ip is : ");
-  Serial.println(WiFi.softAPIP());
-  Serial.print("ESP local ip is : ");
-  Serial.println(WiFi.localIP());
-  
-
-  server.on("/", handleRoot);
-  server.on("/S", HandleSensor);
-  server.on("/K", HandleKontrol);
-  server.on("/inline", []() {
-    server.send(200, "text/plain", "this works as well");
-  });
-  server.onNotFound(handleNotFound);
-  server.begin();
-  server.collectHeaders(headerKeys, numberOfHeaders);
+  server.on("/", handleRoot);		//Root of server.
+  server.on("/S", HandleSensor);	//Sensor handling
+  server.on("/K", HandleKontrol);	//Controlpanel handling.
+  server.onNotFound(handleNotFound);//Error handling.
+  server.begin();					//Starts the server.
+  server.collectHeaders(headerKeys, numberOfHeaders); //Make the library collect specific headers.
   Serial.println("HTTP server started");
 }
 
 void handleRoot() {
-    char temp[400];
+  char temp[400];
   snprintf(temp, 400,
            "<html>\
-  <head>\
-    <meta http-equiv='refresh' content='5'/>\
-    <title>ESP32 Demo</title>\
-    <style>\
-      body { background-color: #cccccc; font-family: Arial, Helvetica, Sans-Serif; Color: #000088; }\
-    </style>\
-  </head>\
-  <body>\
-    <h1>Hello from ESP32!</h1>\
-  </body>\
-</html>");
-  server.send(200, "text/html", temp);
+			  <head>\
+				<meta http-equiv='refresh' content='5'/>\
+				<title>ESP32 Demo</title>\
+				<style>\
+				  body { background-color: #cccccc; font-family: Arial, Helvetica, Sans-Serif; Color: #000088; }\
+				</style>\
+			  </head>\
+			  <body>\
+				<h1>Hello from ESP32!</h1>\
+			  </body>\
+			</html>");
+  server.send(200, "text/html", temp); //On root send a generic website. (not used)
 }
 
 void handleNotFound() {
-  String message = "File Not Found\n\n";
+  String message = "File Not Found\n\n";	//If user request a directory that does not exists, notify user.
   message += "URI: ";
   message += server.uri();
   message += "\nMethod: ";
@@ -112,5 +93,5 @@ void handleNotFound() {
 }
 
 void handleServer(){
-    server.handleClient();
+    server.handleClient();	//Handles http requests.
 }
